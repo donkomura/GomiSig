@@ -51,7 +51,7 @@ func postMessage(name string, msg string, channel string, webhookUrl string) err
     return err
   }
 
-  log.Println(resp)
+//  log.Println(resp)
   defer resp.Body.Close()
   return nil
 }
@@ -71,10 +71,12 @@ func createText() (string, error) {
   begin, _ := time.Parse(format, cal[0].Date)
   diff := today.Sub(begin)
   idx := (int)(diff.Hours()/24)
-  log.Printf("today : %v\n", today)
-  log.Printf("cal[0]: %v\n", cal[0].Date)
-  log.Printf("begin : %v\n", begin)
-  log.Printf("idx   : %v\n", idx)
+//  log.Printf("today : %v\n", today)
+//  log.Printf("cal[0]: %v\n", cal[0].Date)
+//  log.Printf("begin : %v\n", begin)
+//  log.Printf("idx   : %v\n", idx)
 
-  return cal[idx].Type, nil
+  res := "<!channel> " + cal[idx].Type
+
+  return res, nil
 }
