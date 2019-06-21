@@ -15,10 +15,7 @@ type PubSubMessage struct {
 	Data string `json:"data"`
 }
 
-type Calendar struct {
-	Date string `json:"date"`
-	Type string `json:"type"`
-}
+var cal map[string]string
 
 func Gomidashi(ctx context.Context, m PubSubMessage) error {
 	log.Printf("message: %v", m)
@@ -67,26 +64,22 @@ func postMessage(name string, msg string, channel string, webhookUrl string) err
 }
 
 func createText() (string, error) {
-	bytes, err := ioutil.ReadFile("garbage.json")
+	bytes, err := ioutil.ReadFile("2019east.json")
 	if err != nil {
 		return "err", err
 	}
-	var cal []Calendar
+
 	if err := json.Unmarshal(bytes, &cal); err != nil {
 		return "err", err
 	}
 
-	const format = "2006-01-02 00:00:00 +0900"
+	const format = "2006-01-02"
 	today := time.Now()
-	begin, _ := time.Parse(format, cal[0].Date)
-	diff := today.Sub(begin)
-	idx := (int)(diff.Hours() / 24)
+	date := today.Format(format)
 	log.Printf("today : %v\n", today)
-	log.Printf("cal[0]: %v\n", cal[0].Date)
-	log.Printf("begin : %v\n", begin)
-	log.Printf("idx   : %v\n", idx)
+	log.Printf("idx   : %v\n", date)
 
-	res := "<!channel> " + today.Format(format) + "\n" + cal[idx].Type
+	res := "<!channel> " + date + "\n" + cal[date]
 
 	return res, nil
 }
