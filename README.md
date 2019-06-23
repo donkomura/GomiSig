@@ -11,7 +11,8 @@ Example of deploying function at your GCP project
 `Cloud Scheduler -> Cloud Pub/Sub -> Cloud Functions`
 
 ## Getting Started
-* deploy function
+* deploy this function
+
 You can get Webhook URL [here](https://slack.com/services/new/incoming-webhook).
 ```
 gcloud functions deploy Gomidashi \
