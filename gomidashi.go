@@ -11,25 +11,50 @@ import (
 	"time"
 )
 
+// PubSubMessage : published message from Cloud Pub/Sub
 type PubSubMessage struct {
-	Data string `json:"data"`
+	Data []byte `json:"data"`
 }
 
-var cal map[string]string
+// SubscribedMessage : subscribed message from Cloud Pub/Sub
+// Mention      :: ["channel", "here"] (empty: garbage type only)
+// Channel 		:: specify the channel to send messages
+// Area			:: ["north", "south", "east", "west"]
+type SubscribedMessage struct {
+	Mention string `json:"mention,omitempty"`
+	Channel string `json:"channel"`
+	Area    string `json:"area"`
+}
 
+// DecodeMessage : decoding published message from Cloud Pub/Sub
+func (msg PubSubMessage) DecodeMessage() (msgData SubscribedMessage, err error) {
+	if err = json.Unmarshal(msg.Data, &msgData); err != nil {
+		log.Printf("Message[%v] ... Could not decode subscribing data: %v", msg, err)
+		if e, ok := err.(*json.SyntaxError); ok {
+			log.Printf("syntax error at byte offset %d", e.Offset)
+		}
+		return
+	}
+	return
+}
+
+// Gomidashi : entry point
 func Gomidashi(ctx context.Context, m PubSubMessage) error {
-	log.Printf("message: %v", m)
-	var webhookUrl string = os.Getenv("SLACK_WEBHOOK_URL")
-	name := "gomidashi"
-	channel := "gomi"
-
-	text, err := createText()
+	msg, err := m.DecodeMessage()
 	if err != nil {
 		log.Fatal(err)
 		return err
 	}
 
-	err = postMessage(name, text, channel, webhookUrl)
+	filename := "dist/2019" + msg.Area + ".json"
+	text, err := createText(filename, msg.Mention)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+
+	var webhookURL = os.Getenv("SLACK_WEBHOOK_URL")
+	err = postMessage("gomidashi", text, msg.Channel, webhookURL)
 	if err != nil {
 		log.Fatal(err)
 		return err
@@ -38,12 +63,12 @@ func Gomidashi(ctx context.Context, m PubSubMessage) error {
 	return nil
 }
 
-func postMessage(name string, msg string, channel string, webhookUrl string) error {
+func postMessage(name string, msg string, channel string, webhookURL string) error {
 	jsonStr := `{"channel":"` + channel + `","username":"` + name + `","text":"` + msg + `"}`
 
 	req, err := http.NewRequest(
 		"POST",
-		webhookUrl,
+		webhookURL,
 		bytes.NewBuffer([]byte(jsonStr)),
 	)
 	if err != nil {
@@ -58,28 +83,36 @@ func postMessage(name string, msg string, channel string, webhookUrl string) err
 		return err
 	}
 
-	// log.Println(resp)
 	defer resp.Body.Close()
 	return nil
 }
 
-func createText() (string, error) {
-	bytes, err := ioutil.ReadFile("2019east.json")
+func createText(filename string, mention string) (string, error) {
+	bytes, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return "err", err
 	}
+
+	// store date and garbage type data
+	var cal map[string]string
 
 	if err := json.Unmarshal(bytes, &cal); err != nil {
 		return "err", err
 	}
 
 	const format = "2006-01-02"
-	today := time.Now()
+	jst := time.FixedZone("Asia/Tokyo", 9*60*60)
+	today := time.Now().UTC().In(jst)
 	date := today.Format(format)
 	log.Printf("today : %v\n", today)
 	log.Printf("idx   : %v\n", date)
 
-	res := "<!channel> " + date + "\n" + cal[date]
+	var res string
+	if mention == "here" || mention == "channel" {
+		res = "<!" + mention + "> " + date + "\n" + cal[date]
+	} else {
+		res = date + "\n" + cal[date]
+	}
 
 	return res, nil
 }
