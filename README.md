@@ -12,6 +12,7 @@ Example of deploying function at your GCP project
 
 ## Getting Started
 * deploy function
+You can get Webhook URL [here](https://slack.com/services/new/incoming-webhook).
 ```
 gcloud functions deploy Gomidashi \
  --project <project-name> \
